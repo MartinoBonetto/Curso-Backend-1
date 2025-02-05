@@ -1,61 +1,92 @@
 import fs from 'fs';
-const path = './data/products.json';
+import path from 'path';
+
+// Ruta al archivo donde se guardarán los productos
+const productsFilePath = path.join('./data', 'products.json');
 
 class ProductManager {
     constructor() {
-        this.products = this._loadProducts();
+        this.products = [];
+        this.loadProducts();
     }
 
-    _loadProducts() {
+    // Cargar los productos desde el archivo JSON
+    loadProducts() {
         try {
-            return JSON.parse(fs.readFileSync(path, 'utf-8'));
+            if (fs.existsSync(productsFilePath)) {
+                const data = fs.readFileSync(productsFilePath, 'utf-8');
+                this.products = JSON.parse(data);
+            }
         } catch (error) {
-            return [];
+            console.error('Error al cargar los productos:', error);
         }
     }
 
-    _saveProducts() {
-        fs.writeFileSync(path, JSON.stringify(this.products, null, 2));
+    // Guardar los productos en el archivo JSON
+    saveProducts() {
+        try {
+            fs.writeFileSync(productsFilePath, JSON.stringify(this.products, null, 2));
+        } catch (error) {
+            console.error('Error al guardar los productos:', error);
+        }
     }
 
+    // Obtener todos los productos
     getAllProducts() {
         return this.products;
     }
 
-    getProductById(pid) {
-        return this.products.find(product => product.id === pid);
+    // Obtener un producto por su ID
+    getProductById(id) {
+        return this.products.find(product => product.id === id);
     }
 
-    addProduct(product) {
-        const newProduct = { ...product, id: this._generateId() };
+    // Agregar un nuevo producto
+    addProduct(title, description, code, price, status, stock, category, thumbnails) {
+        // Crear un nuevo producto
+        const newProduct = {
+            id: this.generateId(),
+            title,
+            description,
+            code,
+            price,
+            status,
+            stock,
+            category,
+            thumbnails
+        };
         this.products.push(newProduct);
-        this._saveProducts();
+        this.saveProducts();
         return newProduct;
     }
 
-    updateProduct(pid, updatedProduct) {
-        const index = this.products.findIndex(product => product.id === pid);
-        if (index !== -1) {
-            this.products[index] = { ...this.products[index], ...updatedProduct };
-            this._saveProducts();
-            return this.products[index];
+    // Actualizar un producto por ID
+    updateProduct(id, updatedData) {
+        const product = this.getProductById(id);
+        if (product) {
+            Object.assign(product, updatedData);
+            this.saveProducts();
+            return product;
         }
         return null;
     }
 
-    deleteProduct(pid) {
-        const index = this.products.findIndex(product => product.id === pid);
-        if (index !== -1) {
-            const deletedProduct = this.products.splice(index, 1);
-            this._saveProducts();
-            return deletedProduct[0];
+    // Eliminar un producto por ID
+    deleteProduct(id) {
+        const productIndex = this.products.findIndex(product => product.id === id);
+        if (productIndex !== -1) {
+            const deletedProduct = this.products.splice(productIndex, 1);
+            this.saveProducts();
+            return deletedProduct;
         }
         return null;
     }
 
-    _generateId() {
+    // Generar un ID único para los productos
+    generateId() {
         return this.products.length ? Math.max(...this.products.map(product => product.id)) + 1 : 1;
     }
 }
 
-export default new ProductManager();
+export default new ProductManager;
+
